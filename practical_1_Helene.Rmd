@@ -1,0 +1,149 @@
+---
+title: "Bio302 Practical 1 Exploratory Data Analysis"
+author: "Richard J. Telford"
+date: "May 25, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Part 1 Peguins
+
+Load the `palmerpenguins` package and see the `penguins` data.
+```{r}
+#install.package("palmerpenguins")
+library(palmerpenguins)
+library(tidyverse)
+penguins.df <- palmerpenguins::penguins
+str(penguins.df) # view did not work
+names(penguins.df) # checking out the names, they look ok 
+
+penguins.df <- na.omit(palmerpenguins::penguins)
+```
+
+
+Find the range, mean, median and variance of variable `bill_length_mm`.
+```{r}
+# Calculating range, mean, median and variance of variable `bill_length_mm` 
+# through making new separate objects
+bill_length.range    <- range(penguins.df$bill_length_mm, na.rm = TRUE)
+bill_length_mean     <- mean(penguins.df$bill_length_mm, na.rm = TRUE)
+bill_length_median   <- median(penguins.df$bill_length_mm, na.rm = TRUE)
+bill_length_variance <- var(penguins.df$bill_length_mm, na.rm = TRUE)
+
+# Trying to use the summarise function to calculate 
+# range, mean, median and variance of variable `bill_length_mm`
+penguins.df %>% summarise(
+  mean = mean(bill_length_mm), # 'mean' is the name of 'mean(bill_length_mm)'
+  median = median(bill_length_mm), # 'median' is the name of 'median(bill_length_mm)'
+  range = range(bill_length_mm), # 'range' is the name of 'range(bill_length_mm)'
+  variance = var(bill_length_mm)) # 'variance' is the name of 'var(bill_length_mm)'
+
+```
+
+
+What is the standard error of the mean of `bill_length_mm`.
+```{r}
+# Before calculating the standard error i will calculate the standard deviation
+# Calculating standard deviation of the mean of `bill_length_mm`
+sd.bill_length_mean <- sqrt(bill_length_variance)
+
+# Calculating standard error of the mean of `bill_length_mm`
+se.bill_length_mean <- sd.bill_length_mean/sqrt(bill_length_mean)
+```
+
+Plot a histogram of variable `bill_length_mm`.
+```{r}
+# Simple histogram of bill length (mm)
+ggplot(penguins.df, aes(x = bill_length_mm)) +
+  geom_histogram(fill = 'gray90') + # color of fill of bars
+  theme_bw() + # theme black and white (i think)
+  labs(title = "Bill length - Palmer's Penguins", # title of plot
+              x = "Bill length (mm)", y = "Count")# labels of x- and y-axis
+```
+
+Mark the position of the mean and median.
+```{r}
+# Simple histogram of bill length (mm) with mean and median 
+ggplot(penguins.df, aes(x = bill_length_mm)) +
+  geom_histogram(fill = 'gray90') + # color of fill of bars
+  theme_bw(base_size = 20) + # theme black and white (i think)
+  labs(title = "Bill length - Palmer's Penguins", # title of plot
+              x = "Bill length (mm)", y = "Count") + # labels of x- and y-axis
+  # adding the mean in form of a blue line
+  geom_vline(xintercept = bill_length_mean, linetype = 1, color = 'royalblue', size = 1) +
+  # # adding the median in form of a  line
+  geom_vline(xintercept = bill_length_median, linetype = 1, color = 'hotpink', size = 1) 
+```
+
+Plot `bill_length_mm` against `bill_depth_mm`
+```{r}
+# Plot of bill length ~ bill depth 
+ggplot(penguins.df, aes(x = bill_length_mm, y = bill_depth_mm)) +
+  geom_point(shape = 19, color = 'royalblue') + # color of fill of points
+  theme_bw(base_size = 20) + # theme black and white (i think)
+  labs(title = "Bill length against bill depth - Palmer's Penguins", # title of plot
+              x = "Bill length (mm)", y = "Bill depth (mm)")  # labels of x- and y-axis
+```
+
+Find the covariance and correlation of `bill_length_mm` against `bill_depth_mm`.
+```{r}
+# Covariance of bill length and bill depth
+covar_bill_length_depth <- cov(x = penguins.df$bill_length_mm, 
+                               y = penguins.df$bill_depth_mm,
+                               use = 'pairwise.complete.obs')
+
+# Correlation of bill length and bill depth
+corr_bill_length_depth <- cor(x = penguins.df$bill_length_mm, 
+                               y = penguins.df$bill_depth_mm,
+                               use = 'pairwise.complete.obs')
+```
+
+Is the correlation significant? (hint use cor.test())
+```{r}
+# xxx
+cor.test(x = penguins.df$bill_length_mm, 
+         y = penguins.df$bill_depth_mm,
+         use = 'pairwise.complete.obs')
+```
+*Yes, the correlation is significant (p-value < 0.01).*
+
+How should the p-value be interpreted?
+*---*
+
+There are three levels in factor `species` Plot `bill_length_mm` against `bill_depth_mm`, coloured by `species`
+```{r}
+# Plot of bill length ~ bill depth, coloured by species 
+ggplot(penguins.df, aes(x = bill_length_mm, y = bill_depth_mm, color = species)) +
+  geom_point(shape = 19) +
+               #c('Adelie' = 'royalblue',
+  #               'Gentoo' = 'seagreen3',
+  #               'Chinstrap' = 'palevioletred')) + # color of fill of points
+  theme_bw(base_size = 20) + # theme black and white (i think)
+  labs(title = "Bill length ~ bill depth - Palmer's Penguins", # title of plot
+              x = "Bill length (mm)", y = "Bill depth (mm)")  # labels of x- and y-axis
+```
+
+# <span style="color:red">**CONTINUE FROM HERE**</span>
+
+Is the correlation between `bill_length_mm` against `bill_depth_mm` significant for any of the groups?
+```{r}
+# Making three objects with only the species to compare them to each other
+species_1 <- filter(penguins.df, species == 'Adelie')
+species_2 <- filter(penguins.df, species == 'Gentoo')
+species_2 <- filter(penguins.df, species == 'Chinstrap')
+
+# Comparing the groups to each other 
+
+```
+
+This is a sub-group analysis, what are the dangers of this type of analysis?
+
+# Part 2 not penguins
+
+Install the `datasauRus` package with `install.packages("datasauRus")` and load it with `library`.
+
+Dataset `datasaurus_dozen` has `x` and `y` variables and a dataset name. 
+For each dataset, calculate the mean and standard deviation of x and y and the correlationn between x and y.
