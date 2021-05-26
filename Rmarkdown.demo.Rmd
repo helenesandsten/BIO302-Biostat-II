@@ -1,0 +1,70 @@
+---
+title: "Rmarkdown 3rd session - Mt Gonga and Rmarkdown"
+author: "Helene Sandsten"
+date: "5/26/2021"
+output: html_document
+---
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+summary(cars)
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+
+All this is pre-set stuff from the markdown file: 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+---
+# Hello!
+### this is my Rmarkdown document 
+
+Take a lot at this **simple boxplot**, that *Richard* taught ***me*** how to make:
+
+Here I imported the libraries i need:
+```{r, message = FALSE}
+# loading libraries
+library(tidyverse)
+library(readxl)
+```
+
+Here I createed an object (or dataframe?) from the excel sheet with the data:
+```{r, warning = FALSE}
+#### NEW AND IMPROVED MT GONGA STUFF ####
+# Importing data and making dataframe 'mtgonga'
+mtgonga <- "biomass2015.xls" 
+```
+
+Here I made an object I'm not sure how to describe: (should be space after this)
+```{r, warning = FALSE}
+# Making object with data from all sheets of 'mtgonga' 
+mtg_data <- excel_sheets(mtgonga) %>% 
+  map_dfr(~ read_excel(mtgonga, sheet = .x))
+```
+
+Here is the code for the **simple boxplot** 
+```{r, warning = FALSE}
+# Simple boxplot 
+ggplot(mtg_data, aes(x = site, y = production)) +
+  geom_boxplot()
+```
+
+All this is pre-set stuff from the markdown file: 
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
