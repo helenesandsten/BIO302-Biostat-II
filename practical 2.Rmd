@@ -1,0 +1,111 @@
+---
+title: "Linear models"
+author: "Richard J. Telford"
+date: "May 26, 2016"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## Linear Modelling Exercises
+
+### 1. Import the penguin data from the `palmerpenguin` package
+```{r Importing packages and datasets}
+# Importing libraries needed
+library(palmerpenguins)
+library(tidyverse)
+
+# Importing data from 'palmerpenguins' package
+penguins.df <- palmerpenguins::penguins # pulls out data from the palmerpenguins 
+                                        # package and creates object 'penguins.df'
+```
+
+### 2. Do big birds have big beaks? Fit a linear model between bill length and body mass, and interpret the coefficients.
+```{r Linear model and plot}
+# Fitting model to see if big birds have big beaks
+fit.lm <- lm(bill_length_mm ~ body_mass_g, data = penguins.df)
+summary(fit.lm)
+
+# Making a plot to see the data
+ggplot(penguins.df, aes(x = body_mass_g, y = bill_length_mm)) +
+  geom_point() +
+  theme_bw(base_size = 20) +
+  labs(x = "Body mass (g)", y = "Bill length (mm)", 
+       title = "Do big birds have big beaks?") +
+  stat_smooth(method = "lm", col = "hotpink") # did not work 
+
+```
+
+**Interpretation of coefficients** <br>
+*As the t values are large this looks very good. A large t value tell you that there are few/little errors in the data. Multiple R-squared is 0.35, and thus this factor/predictor explains 35% of the variation of the trait.* 
+
+### 3. Examine the diagnostics plots. Is everything OK?
+```{r Diagnostic plots}
+# Examining the diagnostic plots of my model - fit.lm
+par(mfrow = c(2,2))
+plot(fit.lm)
+par(mfrow = c(1,1))
+```
+
+**Interpretation of diagnotsic plots** <br>
+*The diagnostic plots look ok* <br>
+ * Residuals vs fitted: relatively flat <br> 
+ * Normal Q-Q: ok, not great at the 'upper' end, not on the line <br> 
+ * Scale-location: ok, not great, should be flatter <br>
+ * Residuals vs Leverage: looks great <br>
+
+### 3. Calculate the residual sum of squares (RSS) (find sum the squared difference between the estimates calculated from the coefficients and the observed values). <br> 
+```{r Calculate the residual sum of squares (RSS)}
+# Finding the coefficients in my model (instead of copy-pasting from summary)
+# to calculate residual sum of squares (RSS)
+
+# Coefficients in my model 'fit.lm'
+coef(fit.lm)
+
+# Coefficient 1 (Intercept) from my model 'fit.lm'
+coef(fit.lm)[1] # (Intercept) 26.89887
+
+# Coefficient 2 (body_mass_g) from my model 'fit.lm'
+coef(fit.lm)[2] # body_mass_g 0.004051417
+
+# Residual sum of squares (RSS)
+# This is the best model, and we can see that by changing the numbers in them 
+# and see that they are not smaller i.e. not a better 'calculation' that the RSS
+sum((penguins.df$bill_length_mm - ((coef(fit.lm)[1]) + ((coef(fit.lm)[2]) * penguins.df$body_mass_g)))^2, na.rm = TRUE)
+# 6564.494
+```
+<br>
+<br>
+### 4. Recalculate the Residual sum of squares using different values for the coefficients (in the formula yi = Beta + Beta xi + ??i). <br>
+```{r Recalculate the Residual sum of squares}
+# Changing 'coef(fit.lm)[1]' to the number 3 to recalculate the RSS
+sum((penguins.df$bill_length_mm - ((3) + ((coef(fit.lm)[2]) * penguins.df$body_mass_g)))^2, na.rm = TRUE)
+# 201899.9 > 6564.494
+```
+
+<br> 
+<br>
+5. Is the new RSS larger or smaller?<br>
+**The new RSS is (much) bigger than the previous one from the linear model.** <br>
+6. Estimate the slope using covariance and variance.
+```{r Covariance and variance}
+# Finding stuff i need to calculate cov and var
+
+# Variance of bill length and body mass
+var_bl <- var(penguins.df$bill_length_mm, na.rm = TRUE) 
+var_bm <- var(penguins.df$body_mass_g, na.rm = TRUE) 
+
+# Covariance of bill length and body mass
+covar_bl_bm <- cov(x = penguins.df$body_mass_g, 
+                   y = penguins.df$bill_length_mm,
+                   use = 'pairwise.complete.obs')
+```
+
+
+7. Do you get the same result?
+8. Add species to the model as a predictor.
+9. Does species improve the model?
+10. How should the coefficients be interpreted?
+

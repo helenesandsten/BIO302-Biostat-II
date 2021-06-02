@@ -1,0 +1,108 @@
+---
+title: "Spatial and temporal structure"
+author: "Richard J. Telford"
+date: "June 1, 2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = FALSE, eval = FALSE, message = FALSE)
+```
+
+1) Simulate a 100-observation autocorrelated timeseries with `arima.sim`, with a first order autoregressive coefficient of 0.5. Also make a time vector of `1:100`
+```{r Simulation}
+# Making simulation 
+arima.sim(n = 100, )
+
+ts.sim <- arima.sim(list
+                    # specifying that this is an AR1-model, 1st order model
+                    (order = c(1,0,0), 
+                      # order = c(2,0,0) --> AR2-model, 2nd order model
+                         ar = 0.5), # autoregressive coefficient
+                    n = 100) # number of obs
+
+time.vector <- 1:100
+```
+
+
+2) Plot the data. 
+```{r Plot 1}
+# Plotting the data
+ts.plot(ts.sim)
+```
+
+
+
+3) Regress the timeseries against time with an OLS model. Does the model appear to be statistically significant?
+```{r}
+# Normally you would use lm() 
+gls.1 <- gls(ts.sim ~ time.vector)
+anova(gls.1)
+
+# linear model 
+lm1 <- lm(ts.sim ~ time.vector)
+anova(lm1)
+```
+
+
+4) Plot the model diagnostics, including an `acf` and `pacf` of the residuals.
+```{r Plot 2 - model diagnostic}
+# 
+plot(lm1)
+
+# Autocorrelation function
+acf(resid(lm1))
+
+# Partial autocorrelation function
+pacf(resid(lm1))
+```
+
+
+5) Use the Durbin-Watson test to test the residuals for autocorrelation.
+```{r Durbin-Watson test}
+# install.packages("lmtest")
+library(lmtest)
+
+# Durbin-Watson test to check for autocorrelation 
+dwtest(lm1) 
+# Values between 0-4, DW = 2 no autocorrelation 
+#                         <2 positive autocorrelation 
+#                         >2 negative autocorrelation 
+
+# DW = 0.7918, p-value = 2.696e-10
+# Positive autocorrelation, very significant p-value
+# null hypothesis rejected i.e. there is positive autocorrelation in model lm1 
+```
+*DW = 0.7918, p-value = 2.696e-10* <br>
+*Positive autocorrelation, very significant p-value* <br>
+*Null hypothesis rejected i.e.* ***there is positive autocorrelation in model lm1*** <br>
+
+
+6) Fit a gls with an appropriate correlation structure. Is this a better model? How have the p-value and effect size changed?
+```{r}
+
+```
+
+
+7) Repeat the above 1000 times and find how autocorrelation affects the distribution of the p-value and the effect size.
+
+
+## Real data
+
+1) The built-in dataset LakeHuron has annual lake level data from 1885 to 1972
+Load the data with the command data(LakeHuron)
+
+2) Plot the data.
+
+3) Regress the LakeHuron lake level against year using a linear model. Is there a significant trend?
+
+4) Plot the autocorrelation and partial autocorrelation functions for the residuals from this regression. Interpret them.
+
+5) Fit an autoregressive models to the residuals. Compare the results with your interpretation of the PACF plot.
+
+
+6) Fit a gls model using a corAR1 correlation structure. Test if the correlation structure is necessary. Is the trend significant? 
+
+7) Fit a gls model using a corARMA correlation structure with two AR terms. Is this model an improvement?
+
+

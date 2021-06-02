@@ -1,0 +1,71 @@
+---
+title: "Practical 3"
+author: "Richard J. Telford"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+## GLS
+
+With the built-in `iris` data.
+```{r Data import}
+# Loading libraries
+library(tidyverse)
+
+# Importing data 
+iris.df <- iris # built in dataset, no need to import 
+str(iris.df)
+```
+
+
+Make a plot to show how `Petal.Length` varies between species.
+```{r Plot of petal length and species}
+# Plotting petal length to see if it varies between species 
+ggplot(data = iris.df, aes(x = Species, y = Petal.Length, fill = Species)) +
+  geom_boxplot() + 
+  theme_bw(base_size = 20) +
+  labs(title = "Boxplot: Petal length and species", x = "Species", y = "Petal Length")
+```
+
+Find the variance of `Petal.Length` for each species.
+```{r Variance of petal length}
+# Finding variance for each species 
+iris.df %>% 
+  group_by(Species) %>% 
+  summarise(
+  variance = var(Petal.Length)) # 'variance' is the name of 'var(Petal.Length)'
+```
+
+
+Fit an anova using `lm` between `Petal.Length` and species and examine the diagnostic plots.
+```{r Fitting anova, diagnostic plots}
+# Making linear model to investigate xx
+fit.lm_petal.sp <- lm(Petal.Length ~ Species, data = iris.df)
+plot(fit.lm_petal.sp) # 
+
+# Not sure if this is necessary, but tried it 
+anova(fit.lm_petal.sp)
+summary(fit.lm_petal.sp) 
+```
+
+Fit a `gls` for the same model. Have the coefficients changed? (remember to load ??nlme?? package)
+```{r Generalized least squared for my model `fit.lm_petal.sp`}
+# EXPLAIN WHY
+library(nlme)
+fit_gls1_petal.sp <- gls(Petal.Length ~ Species, data = iris.df)
+summary(fit_gls1_petal.sp)
+```
+
+
+Fit a `gls` for the same model but allow the variance to be different for each species by adding `varIdent` to the `weights` argument of the model. 
+```{r Variance different for each species}
+# 
+fit_gls2_petal.sp <- gls(Petal.Length ~ Species, data = iris.df, 
+                        weights = varIdent(form = ~ +1|Species))
+summary(fit_gls2_petal.sp)
+```
+
+Use `AIC` to test if this is a better model.
