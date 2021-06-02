@@ -1,0 +1,129 @@
+---
+title: "GLM"
+author: "Richard J. Telford"
+output: html_document
+---
+
+```{r, messages = 'hide'} 
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Exercises GLM
+
+## Poisson GLM
+1. Import sorich.csv
+```{r data import}
+# Importing data
+sorich.df <- read.csv("sorich.csv")
+```
+<br><br> 
+2. Fit a linear model for species richness (nsp) against cover assuming a Normal distribution
+```{r fit linear model}
+# Fitting model (adapted from lecture)
+fit_lm <- lm(nsp ~ cover, data = sorich.df)
+
+# Checking p-values for model - looks good, model is statistically significant
+summary(fit_lm)
+```
+<br><br> 
+3. Study the diagnostic plots
+```{r Diagnostic plots}
+# Diagnostic plots 
+par(mfrow = c(2,2))
+plot(fit_lm)
+par(mfrow = c(1,1))
+# Normal Q-Q plot does not look so good
+```
+<br><br> 
+*Normal Q-Q plot does not look so good, not sure about scale-location.*
+<br><br> 
+4. What distribution is the response?
+```{r plot of nsp ~ cover}
+# Plotting nsp ~ cover to see distribution 
+library(tidyverse)
+ggplot(sorich.df, aes(x = cover, y = nsp)) + 
+  geom_point() + 
+  labs(y = "Species Richness", x = "Cover") +
+  theme_bw(base_size = 16) 
+```
+<br><br> 
+*The distribution of the data is not normal (gaussian), but is an example of a poisson-distributed dataset.* 
+<br><br> 
+5. Do an appropriate analysis
+```{r glm}
+# Doing an appropriate analysis
+# trying with glm and poisson distribution because data is cover aka proportion
+fit_glm_poi <- glm(nsp ~ cover, data = sorich.df, family = poisson)
+
+# Checking p-values for model 
+summary(fit_glm_poi) # looks good, model is statistically significant
+```
+<br><br> 
+6. Check for over-dispersion. If necessary modify the model.
+```{r overdispersion}
+# Running anova to check for overdispersion 
+anova(fit_glm_poi)
+# Residual df < Residual deviance - overdispersed 
+#         690 < 1315.0 --> res. dev. 2x more than res. df 
+```
+<br>  
+7. Interpret the results <br> 
+*Resudial deviance is 2x more than residual df, i.e. the model is overdispersed*
+<br><br>  
+8. How does the width of the confidence interval at cover = 10 change when over-dispersion is allowed for
+```{r plot, confidence interval ++}
+# TRIED PLOTTING ON MY OWN, DID NOT TURN OUT CORRECT
+# Plot of cover ~ species richness
+ggplot(sorich.df, aes(x = cover, y = nsp)) +
+  geom_point() +
+  labs(y = "Species Richness", x = "Cover") +
+  theme_bw(base_size = 16) +
+# Adding model to coverplot to see if it fits tha data
+  geom_abline(data = fit_glm_poi, color = "hotpink") # STRIAGHT LINE NOT CURVED :(
+
+# PLOT + LINE FROM LECTURE: 
+ggplot(cbind(sorich.df,
+             fit = fitted(fit_glm_poi)), # make sure you fit the correct model
+       aes(x = cover, y = nsp)) + 
+  geom_point() + 
+  geom_line(aes(y = fit), colour = "royalblue") +
+  labs(y = "Species Richness", x = "Cover", title = "Q8: Plot with model line")
+
+```
+
+<br><br>  
+9. Do the grasses differ from the herb? <br> 
+i.e. make grassherb a factor and include it in the model and test its significance.
+<br><br> 
+```{r grasses and herbs}
+# Checking names in sorich.df 
+names(sorich.df) # grasherb already a name? 
+
+# Making grasherb a factor(object?) to test its significance in the model 
+grasherb <- sorich.df["grasherb"] 
+str(grasherb) 
+
+# Including it in my model 'fit_glm_poi'
+fit_glm_gh <- glm(nsp ~ cover * grasherb, data = sorich.df, family = poisson)
+summary(fit_glm_gh) # it seems like grasherb is a significant term/interaction/factor
+anova(fit_glm_gh)   # still overdispersed (i think?)
+```
+
+<br><br> 
+
+## How much does over-dispersion affect results
+1. Use `sample()` to randomise the response in sorich to remove the relationship between the predictor and response.
+2. Test if a Poisson GLM with cover as a predictor is significant
+3. Repeat 1000 times and find the distribution of p-values
+
+## Binomial GLM and GAM
+
+1. Open library mgcv
+2. Import data pot.csv
+3. What type of distribution is the response variable?
+4. What type of link-function do we use?
+5. Do an appropriate GLM analysis?
+6. Interpret the results?
+7. Do a GAM analysis
+8. Compare the GLM and GAM models.
+9. Which model would you prefer, and why?
