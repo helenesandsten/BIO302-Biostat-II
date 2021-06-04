@@ -45,7 +45,7 @@ Fish typically have a mass of **1kg** (`delta = 1`) with a standard deviation of
 # From lectureslide 11/16 - WITH SLIGHT ALTERATIONS
 # data info
 n <- 10    # number observations in each group
-delta <- 1 # difference between means 
+delta <- 1 # difference between means, i.e. effect size
 sd <- 2    # standard deviation 
 
 # simulate means
@@ -205,10 +205,30 @@ anova(temptest1, temptest2)
 # so we keep/consider both temptest1, temptest2
 ```
 <br>
-How many fish do they need to get enough power?
-```{r new power analysis}
-# 
+<span style="color: red;">**How many fish do they need to get enough power?**</span> <br>
 
+```{r new power analysis}
+# ?pwr.anova.test
+anova.pwr <- pwr.anova.test(k = 4, # groups, A, B, cool, warm 
+                            n = NULL, # 1/5 always has to be = NULL 
+                            f = 0.1, # effect size 
+                            power = 0.80, # power 
+                            sig.level = 0.05) # p-value 
+anova.pwr 
+# n = 273.5429 --> need 274 fish in each group to get a power of 0.8
+
+# MAKING A FUNCTION to rerun 
+# new simulation with extra power: 
+sim_temp <- function(n, delta, sd, ...){
+  mu <- rep(c(0, delta), each = n) # simulate means
+  y <- mu + rnorm(length(mu), sd = sd) # add noise
+  x <- factor(rep(c("A", "B"), each = n)) # 1st predictor
+  h <- factor(rep(c("cool", "warm"), times = n)) # 2nd NEW predictor
+  
+  # run test
+  temptest1 <- lm(y ~ x + h)
+  broom::tidy(temptest1) %>% mutate(n = n, delta = delta, sd = sd) 
+}
 
 
 ```
@@ -216,14 +236,36 @@ How many fish do they need to get enough power?
 
 <br>
 Plot your result
+```{r}
+temp_plot <- runs  %>% # plotting the 100-fish simulation 
+  group_by(n) %>% # grouping by number of fish (100)
+  summarise(power = mean(sig)) %>% # 
+  ggplot(aes(x = n, y = power)) + # 
+  geom_line() + # line between dots in scatterplot
+  geom_point() + # scatterplot 
+  labs(title = "Helene's power analysis", x = "# observations", y = "Power") +
+  geom_hline(yintercept = 0.8, # line of power 
+             color = "hotpink", linetype = 2, size = 1) + 
+  theme_bw(base_size = 20) # 
+temp_plot # running plot 
+```
 
 <br>
 # Distribution of p values under Null hypothesis
 
 Simulate some data where the null hypothesis is true (ie effect size is zero).
+```{r}
 
+```
+<br>
 Plot the distribution of p-values. 
+```{r}
 
+```
+<br>
 Compare this to the distribution of p-values calculated above.
+```{r}
+
+```
 
 
