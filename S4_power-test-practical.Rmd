@@ -40,7 +40,8 @@ plot(pow)
 Fish typically have a mass of **1kg** (`delta = 1`) with a standard deviation of **0.2kg** (`sd = 2`).The scientist hopes that the new food will give at least 0.1kg extra mass (otherwise it is not worth the extra cost). <br>
 
 **Simulate data for a single experiment with 10 fish in each arm of the experiment.** <br>
-<span style="color: red;">**Test if your experiment was significant.**</span>
+<span style="color: blue;">**Test if your experiment was significant.**</span> <br>
+*Experiment not significant (`p-value = 0.9`), too small sample size.*
 ```{r simulation of fish experiment}
 # From lectureslide 11/16 - WITH SLIGHT ALTERATIONS
 # data info
@@ -63,8 +64,8 @@ test <- t.test(y ~ x) # not significant, too small sample size
 
 
 **Make your simulation into a function and repeat it 100 times.** <br> 
-<span style="color: red;">**What proportion of trials are statistically significant?**</span> <br>
-<span style="color: blue;">Have not found out :(</span>
+<span style="color: blue;">**What proportion of trials are statistically significant?**</span> <br>
+<span style="color: red;">**Not quite sure yet**</span>
 ```{r making function to rerun}
 # MAKING A FUNCTION to rerun 
 # from lecture notes: 
@@ -205,7 +206,8 @@ anova(temptest1, temptest2)
 # so we keep/consider both temptest1, temptest2
 ```
 <br>
-<span style="color: red;">**How many fish do they need to get enough power?**</span> <br>
+<span style="color: blue;">**How many fish do they need to get enough power?**</span> <br>
+*They need 274 fish in each group, if there are four groups (`k = 4`).* 
 
 ```{r new power analysis}
 # ?pwr.anova.test
@@ -243,10 +245,11 @@ temp_plot <- runs  %>% # plotting the 100-fish simulation
   ggplot(aes(x = n, y = power)) + # 
   geom_line() + # line between dots in scatterplot
   geom_point() + # scatterplot 
-  labs(title = "Helene's power analysis", x = "# observations", y = "Power") +
+  labs(title = "Helene's power analysis of \nexperiment with two factor variables", 
+       x = "# observations", y = "Power") +
   geom_hline(yintercept = 0.8, # line of power 
              color = "hotpink", linetype = 2, size = 1) + 
-  theme_bw(base_size = 20) # 
+  theme_bw(base_size = 16) # 
 temp_plot # running plot 
 ```
 
