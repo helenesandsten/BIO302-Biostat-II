@@ -1,0 +1,203 @@
+---
+title: "Model Selection"
+author: "Richard J. Telford"
+date: "`r format(Sys.Date(), '%d %B %Y')`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## hypothesis testing
+<br>
+1. Import the palmerpenguin data
+```{r data import}
+# Importing data
+penguins.df <- palmerpenguins::penguins
+penguins.df <- na.omit(penguins.df)
+names(penguins.df)
+```
+
+<br>
+2. Test the hypothesis that bill length differs between species.
+```{r hypthesis testing}
+# Testing hypothesis
+# H0: bill length does not differ between species
+# HA: bill length differs between species
+
+# making model 1 to test HA 
+m1 <- lm(bill_length_mm ~ species, data = penguins.df) 
+# lm() because I assume the data is normally distributed
+anova(m1)
+```
+<br>
+3. Test the hypothesis that bill length differs by sex in addition to species.
+```{r model testing}
+# testing m1 
+m1 <- lm(bill_length_mm ~ species, data = penguins.df)
+anova(m1) # model is statistically significant
+
+# testing m2 - additive model 
+# adding predictor variable 'sex' to 'species' 
+m2 <- lm(bill_length_mm ~ species + sex, data = penguins.df)
+anova(m1, m2) # model including 'species + sex' is statistically significant
+
+# testing m3- interaction model 
+# adding predictor variable 'sex' to 'species' and interaction between them 
+m3 <- lm(bill_length_mm ~ species * sex, data = penguins.df)
+anova(m3) # model including interaction between 'species' and 'sex' 
+#           is not statistically significant
+# NB! this way of doing it CAN BE MISLEADING, but works ok here 
+```
+
+```{r model comparison}
+# comparing the models to each other through anova
+anova(m1, m2)
+anova(m2, m3)
+```
+```{r plot to investigate}
+# boxplot to investigate the visual difference between the predictors
+# (to understand why the interaction term in m3 is not significant)
+
+library(tidyverse)
+ggplot(penguins.df, aes(x = species, y = bill_length_mm, fill = sex)) + 
+  geom_boxplot() + 
+  theme_bw(base_size = 18) 
+```
+
+<br>
+4. How should the p-values be interpreted? <br>
+*The p-values are telling me that the interaction term does not significantly improve the best model (m2), and thus the difference in bill length is not caused by an interaction between species and sex, since it is very similar an all three species* 
+<br><br>
+
+## Exploratory model building 
+
+Normally you would be doing this on a separate data set<br>
+
+5. Use forward selection to find the best model to explain bill length.
+```{r forward selction}
+# Forward selection to find best model for explaining bill length 
+mod1 <- lm(bill_length_mm ~ 1,             data = penguins.df) # null model
+mod2 <- lm(bill_length_mm ~ species,       data = penguins.df) # species
+mod3 <- lm(bill_length_mm ~ sex,           data = penguins.df) # sex
+
+# Running anova to compare the models and find the one that is best
+anova(mod1, mod2, mod3)
+# both species and sex are significant terms, so I'll include both 
+
+# Continued forward selection to find best model for explaining bill length 
+mod4 <- lm(bill_length_mm ~ species + sex, data = penguins.df) # additive 
+mod5 <- lm(bill_length_mm ~ species * sex, data = penguins.df) # interaction 
+anova(mod4, mod5)
+# mod3 (additive model) has the lowest RSS, thus this is the best model 
+# for explaining bill length 
+```
+<br>
+6. Build a set of candidate models to explain bill depth using one or two predictors.  
+```{r building set of candidate models}
+# Just making a list (is this correct?)
+mods <- list() 
+mods$mod1 <- lm(bill_length_mm ~ 1,             data = penguins.df) # null model
+mods$mod2 <- lm(bill_length_mm ~ species,       data = penguins.df) # species
+mods$mod3 <- lm(bill_length_mm ~ sex,           data = penguins.df) # sex
+mods$mod4 <- lm(bill_length_mm ~ species + sex, data = penguins.df) # additive 
+mods$mod5 <- lm(bill_length_mm ~ species * sex, data = penguins.df) # interaction 
+```
+
+<br>
+9. Extract the AIC from each models (hint use function `AIC`). Which is the better model?
+```{r AIC of models}
+# Extracting AIC of models
+AIC(mod1, mod2, mod3, mod4, mod5) 
+# AIC does not like lists, 
+# so you have to give the function AIC() the models one at a time
+
+# Or you can do this (from lecture)
+sapply(mods, AIC) 
+# mod5 has the lowest AIC but it is not different enough from the AIC of mod4 
+# i.e. we have to consider mod4 as an appropriate model as well 
+```
+
+<br>
+10. Calculate the deltaAIC for each model.
+```{r deltaAIC}
+# Calculating delta AIC for each model 
+library("AICcmodavg")
+aictab(mods)
+# 
+```
+<br>
+11. Calculate the AIC weights for each model. Interpret these weights.<br>
+
+* *AICcWt of `mod5`: 0.56 chance of it being the best model with more data gathered*
+* *AICcWt of `mod4`: 0.46 chance of it being the best model with more data gathered*
+* *AICcWt of `mod3`, `mod2` and `mod1`: 0.0 chance of them being the best model with more data gathered* <br><br>
+*I.e. `mod4` and `mod5` are still the best models.*
+<br>
+
+## Collinearity 
+
+12. Make a model predicting bill_length from all other variables. Find the VIF of each predictor. Are there any problem variables? `olsrr::ols_vif_tol`
+```{r}
+library("olsrr")
+library("caret")
+
+# Model with all variables from penguins dataset
+mod_all <- lm(bill_length_mm ~ ., data = penguins.df) # '.' means all predictors
+
+# VIF (Variance Inflation Factor) of each predictor - any problem variables?
+olsrr::ols_vif_tol(mod_all)
+# 1 is no correlation
+# Values above 10 maybe a cause for concern
+# Yes, problem variable: speciesGentoo, VIF = 19.730635	
+```
+
+
+13. Use `GGally::ggpairs()` to plot the data to try to identify the cause of any high vif.
+```{r megaplot penguins}
+# Megaplot of everything - to see why there are high VIF's
+# VIF - Variance Inflation Factor
+GGally::ggpairs(penguins.df)
+```
+
+
+14. Use `MASS::mvrnorm()` to simulate 100 observation of two predictor variables (x and z) with a given correlation (*hint from Helene: you'll need a matrix, check out the lectures on correlation ++*). Simulate a response variable y = b0 + b1x + b2z. Test how the uncertainty in the coefficients changes with the correlation (and hence vif) of the predictor variables.
+```{r simulation and correlation}
+# 
+library("MASS")
+MASS::mvrnorm() # ?
+?mvrnorm
+
+# Making a covariance matrix to put into the simulation 
+Sigma <- matrix(c(1, 0.9,   # top row of matrix - 0.9 is the correlation
+                  0.9, 1),  # bottom row of matrix - 0.9 is the correlation
+                2,2)        # rows, columns aka 2 x 2 matrix 
+mu <- c(1,1) # 
+
+# My simulation
+library(tidyverse)
+suprpwr <- mvrnorm(n = 100,          # how many observations we have
+                   mu, Sigma) %>% 
+  as.data.frame() %>%                # making it into a dataframe
+  rename(variable_1 = V1, variable_2 = V2) %>%         # renaming the columns
+  mutate(y = variable_1 + variable_2 + rnorm(100))     # 
+
+# Simple plot of suprpwr simulation
+plot(suprpwr) 
+
+# ggplot of simulation
+ggplot(data = suprpwr, aes(x = variable_1, y = variable_2)) +
+  geom_point() +
+  theme_bw(base_size = 18) +
+  labs(title = "suprpwr simulation plot \ncorrelation = 0.9", 
+       x = "variable 1", y = "variable 2")
+
+# VIF - Variance Inflation Factor
+# Model with all variables from suprpwr dataset
+mod_suprpwr <- lm(y ~ ., data = suprpwr) # '.' means all (here: both) predictors
+
+# VIF of each predictor - any problem variables?
+olsrr::ols_vif_tol(mod_suprpwr) 
+```
+
