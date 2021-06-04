@@ -1,0 +1,216 @@
+---
+title: "Power tests"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Power test app
+
+Run `biostats.apps::power_lm_app()` and explore the effect of the number of observations on the width of the confidence intervals, the proportion of trials that are statistically significant, and the effect size of significant trials.
+
+```{r}
+# Running app to explore statistical stuff
+biostats.apps::power_lm_app()
+```
+
+<br>
+# Simulating a power test
+
+A scientist is setting up an experiment to test whether a new type of food gives more weight gain in fish. They need to know how many fish they need to sample to have an 80% probability (i.e. power = 0.8) of getting a statistically significant result.
+```{r power test analysis}
+# General power test stuff from the lecture 'power tests': 
+# Two-sample t test power calculation 
+library("pwr")
+pow <- pwr.t.test(d = 0.5, # effect size
+                  sig.level = 0.05, 
+                  power = 0.8) 
+pow
+plot(pow)
+# need 64 observations in each group to reach statistical power of 0.8 
+```
+
+
+The experiment has a control (standard food) and a treatment arm (new food). <br>
+
+Fish typically have a mass of 1kg with a standard deviation of 0.2kg. The scientist hopes that the new food will give at least 0.1kg extra mass (otherwise it is not worth the extra cost). <br>
+
+Simulate data for a single experiment with 10 fish in each arm of the experiment. Test if your experiment was significant.
+```{r simulation of fish experiment}
+# From lectureslide 11/16 - WITH SLIGHT ALTERATIONS
+# data info
+n <- 10    # number observations in each group
+delta <- 1 # difference between means 
+sd <- 2    # standard deviation 
+
+# simulate means
+mu <- rep(c(0, delta), each = n)
+
+# add noise
+y <- mu + rnorm(length(mu), sd = sd)
+
+## predictor
+x <- factor(rep(c("A", "B"), each = n))
+
+# run test
+test <- t.test(y ~ x)
+```
+
+
+Make your simulation into a function and repeat it 100 times. What proportion of trials are statistically significant?
+```{r making function to rerun}
+# MAKING A FUNCTION to rerun 
+# from lecture notes: 
+sim_t_test <- function(n, delta, sd, ...){
+  # simulate means
+  mu <- rep(c(0, delta), each = n)
+  # add noise
+  y <- mu + rnorm(length(mu), sd = sd)
+  ## predictor
+  x <- factor(rep(c("A", "B"), each = n))
+  # run test
+  test <- t.test(y ~ x)
+  broom::tidy(test) %>% mutate(n = n, delta = delta, sd = sd) 
+}
+
+```
+
+```{r running the simulation function we just made}
+library("broom")
+library("tidyverse")
+# Lecture simulation - 30 fish 
+sim_t_test(n = 30, # 30 fish 
+           delta = 1, # minimal effect size we are looking for
+           sd = 2) 
+
+# repeat many times
+nrep = 100
+
+control <- crossing(rep_no = 1:nrep, 
+                    n = seq(10, 100, 20)) # from 10, to 100, series of 20
+
+runs <- control %>%
+  pmap_df(sim_t_test, # the simulation function we just made
+          delta = 1, # minimal effect size we are looking for 
+          sd = 2) %>% 
+  mutate(sig = p.value <= 0.05) 
+
+plot_30fish <- runs  %>%
+  group_by(n) %>%
+  summarise(power = mean(sig)) %>%
+  ggplot(aes(x = n, y = power)) +
+  geom_line() +
+  geom_point()
+plot_30fish
+```
+
+
+Run the simulation for different numbers of fish. How many are needed to get enough power?
+```{r my simulation(s)}
+# DO NOT CHANGE THE NAME 'sim_t_test' - IT IS THE FUNCTION'S NAME
+# My simulation - 100 fish 
+sim_t_test(n = 100, # 100 fish
+           delta = 1, sd = 2)
+
+# How many times (n) you want to repeat (rep) the simulation 
+# (can take a while if you want to run it MANY times)
+nrep = 120 
+
+# ?
+control <- crossing(rep_no = 1:nrep, # not quite sure whats going on here
+                    n = seq(10, 120, 20)) # seq(from n, to n, series of n)
+
+# Running the simulation 
+runs <- control %>%
+  pmap_df(sim_t_test, # the simulation function we just made
+          delta = 1, # minimal effect size we are looking for 
+          sd = 2) %>% # st dev 
+  mutate(sig = p.value <= 0.05) # setting 
+```
+
+
+Plot your results.
+```{r plotting results}
+plot_100fish <- runs  %>% # plotting the 100-fish simulation 
+  group_by(n) %>% # grouping by number of fish (100)
+  summarise(power = mean(sig)) %>% # 
+  ggplot(aes(x = n, y = power)) + #
+  geom_line() + # line
+  geom_point() # scatterplot 
+
+plot_100fish # creating plot 
+```
+
+
+# A second variable
+
+The scientist thinks that a second variable, temperature, is also important, so expands the experiment to include this second variable with two levels, cool and warm.
+<br>
+Extend your power analysis to cope with the new experimental design.
+```{r 2nd var - extending power analysis}
+# EXTENDING POWER ANALYSIS BY ADDING PREDICTOR VARIABLE h
+# From lectureslide 11/16
+# data info
+n <- 100    # number observations in each group, changed it from 30 to 64
+delta <- 0.1 # difference between means 
+sd <- 0.2    # standard deviation 
+
+# simulate means
+mu <- rep(c(0, delta), each = n)
+#?rep
+
+# add noise
+y <- mu + rnorm(length(mu), sd = sd)
+
+# Making my predictor variables: x and h
+# x for food type: A and B 
+# each in function rep: A A A A A B B B B B B
+x <- factor(rep(c("A", "B"), each = n)) 
+
+# h for temperature: cool and warm
+# times in function rep: cool warm cool warm cool warm 
+h <- factor(rep(c("cool", "warm"), times = n)) 
+
+# Run test - two-way-anova aka linear model because 2x categorical predictors 
+temptest.h <- lm(y ~ h)         # temperature predictor 
+temptest1 <- lm(y ~ x + h)      # additive model 
+
+anova(temptest.h, temptest1)    # temptest1 lowest RSS, and statistically significant
+
+# Checking 
+temptest2 <- lm(y ~ x * h)      # interaction model 
+
+anova(temptest1, temptest2) 
+# temptest2 has slightly lower RSS, but it is not statiistically significant,
+# so we keep/consider both temptest1, temptest2
+```
+<br>
+How many fish do they need to get enough power?
+```{r new power analysis}
+# General power test stuff from the lecture 'power tests': 
+# Two-sample t test power calculation 
+library("pwr")
+pow <- pwr.anova.test(d = 0.5, # effect size
+                  sig.level = 0.05, 
+                  power = 0.8) 
+pow
+plot(pow)
+?pwr
+```
+
+
+<br>
+Plot your result
+
+<br>
+# Distribution of p values under Null hypothesis
+
+Simulate some data where the null hypothesis is true (ie effect size is zero).
+
+Plot the distribution of p-values. 
+
+Compare this to the distribution of p-values calculated above.
+
+
