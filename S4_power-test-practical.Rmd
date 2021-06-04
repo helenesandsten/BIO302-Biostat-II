@@ -1,6 +1,7 @@
 ---
 title: "Power tests"
 output: html_document
+runtime: shiny
 ---
 
 ```{r setup, include=FALSE}
@@ -20,7 +21,10 @@ biostats.apps::power_lm_app()
 # Simulating a power test
 
 A scientist is setting up an experiment to test whether a new type of food gives more weight gain in fish. They need to know how many fish they need to sample to have an 80% probability (i.e. power = 0.8) of getting a statistically significant result.
-```{r power test analysis}
+
+The experiment has a control (standard food) and a treatment arm (new food). <br>
+
+```{r power test}
 # General power test stuff from the lecture 'power tests': 
 # Two-sample t test power calculation 
 library("pwr")
@@ -33,11 +37,10 @@ plot(pow)
 ```
 
 
-The experiment has a control (standard food) and a treatment arm (new food). <br>
+Fish typically have a mass of **1kg** (`delta = 1`) with a standard deviation of **0.2kg** (`sd = 2`).The scientist hopes that the new food will give at least 0.1kg extra mass (otherwise it is not worth the extra cost). <br>
 
-Fish typically have a mass of 1kg with a standard deviation of 0.2kg. The scientist hopes that the new food will give at least 0.1kg extra mass (otherwise it is not worth the extra cost). <br>
-
-Simulate data for a single experiment with 10 fish in each arm of the experiment. Test if your experiment was significant.
+**Simulate data for a single experiment with 10 fish in each arm of the experiment.** <br>
+<span style="color: red;">**Test if your experiment was significant.**</span>
 ```{r simulation of fish experiment}
 # From lectureslide 11/16 - WITH SLIGHT ALTERATIONS
 # data info
@@ -54,12 +57,14 @@ y <- mu + rnorm(length(mu), sd = sd)
 ## predictor
 x <- factor(rep(c("A", "B"), each = n))
 
-# run test
-test <- t.test(y ~ x)
+# Run test
+test <- t.test(y ~ x) # not significant, too small sample size 
 ```
 
 
-Make your simulation into a function and repeat it 100 times. What proportion of trials are statistically significant?
+**Make your simulation into a function and repeat it 100 times.** <br> 
+<span style="color: red;">**What proportion of trials are statistically significant?**</span> <br>
+<span style="color: blue;">Have not found out :(</span>
 ```{r making function to rerun}
 # MAKING A FUNCTION to rerun 
 # from lecture notes: 
@@ -81,13 +86,14 @@ sim_t_test <- function(n, delta, sd, ...){
 library("broom")
 library("tidyverse")
 # Lecture simulation - 30 fish 
-sim_t_test(n = 30, # 30 fish 
+sim_t_test(n = 10, # 30 fish 
            delta = 1, # minimal effect size we are looking for
            sd = 2) 
 
 # repeat many times
 nrep = 100
 
+# crossing two matrices, not sure why 
 control <- crossing(rep_no = 1:nrep, 
                     n = seq(10, 100, 20)) # from 10, to 100, series of 20
 
@@ -101,9 +107,15 @@ plot_30fish <- runs  %>%
   group_by(n) %>%
   summarise(power = mean(sig)) %>%
   ggplot(aes(x = n, y = power)) +
-  geom_line() +
-  geom_point()
-plot_30fish
+  geom_line() + 
+  geom_point() 
+
+# shows which p-values that are <0.05 (true) and which are >0.05
+runs %>% 
+  group_by(sig) %>% 
+  summarise(n = n()) %>% 
+  mutate(proportion = n*100/500)
+# power = 63.4 - a bit too low 
 ```
 
 
@@ -111,7 +123,7 @@ Run the simulation for different numbers of fish. How many are needed to get eno
 ```{r my simulation(s)}
 # DO NOT CHANGE THE NAME 'sim_t_test' - IT IS THE FUNCTION'S NAME
 # My simulation - 100 fish 
-sim_t_test(n = 100, # 100 fish
+sim_t_test(n = 2000, # 100 fish
            delta = 1, sd = 2)
 
 # How many times (n) you want to repeat (rep) the simulation 
@@ -128,6 +140,12 @@ runs <- control %>%
           delta = 1, # minimal effect size we are looking for 
           sd = 2) %>% # st dev 
   mutate(sig = p.value <= 0.05) # setting 
+
+# shows which p-values that are <0.05 (true) and which are >0.05
+runs %>% 
+  group_by(sig) %>% 
+  summarise(n = n()) %>% 
+  mutate(proportion = n*100/720)
 ```
 
 
@@ -189,15 +207,10 @@ anova(temptest1, temptest2)
 <br>
 How many fish do they need to get enough power?
 ```{r new power analysis}
-# General power test stuff from the lecture 'power tests': 
-# Two-sample t test power calculation 
-library("pwr")
-pow <- pwr.anova.test(d = 0.5, # effect size
-                  sig.level = 0.05, 
-                  power = 0.8) 
-pow
-plot(pow)
-?pwr
+# 
+
+
+
 ```
 
 
